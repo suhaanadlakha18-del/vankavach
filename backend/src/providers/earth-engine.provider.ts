@@ -1,4 +1,7 @@
-﻿import ee from '@google/earthengine';
+import earthEngine from '@google/earthengine';
+
+// Dynamic Google Earth Engine SDK boundary.
+const ee: any = earthEngine;
 import { env } from '../config/env.js';
 import type {
   ProviderStatus,
@@ -187,8 +190,10 @@ export class EarthEngineProvider implements SatelliteProvider {
 
     const region = point.buffer(1000);
 
-    const end = ee.Date(Date.now());
-    const start = end.advance(-30, 'day');
+    const endDate = new Date();
+    const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const start = startDate.toISOString();
+    const end = endDate.toISOString();
 
     const sentinel2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
       .filterBounds(region)
@@ -228,7 +233,7 @@ export class EarthEngineProvider implements SatelliteProvider {
     const s1Image = ee.Image(sentinel1.first());
 
     const vh = await evaluate<Record<string, number | null>>(
-      s1Image.select('VH').reduceRegion({
+      s1Image.select(['VH']).reduceRegion({
         reducer: ee.Reducer.mean(),
         geometry: region,
         scale: 20,
@@ -278,8 +283,10 @@ export class EarthEngineProvider implements SatelliteProvider {
       location.latitude
     ]).buffer(1000);
 
-    const end = ee.Date(Date.now());
-    const start = end.advance(-90, 'day');
+    const endDate = new Date();
+    const startDate = new Date(endDate.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const start = startDate.toISOString();
+    const end = endDate.toISOString();
 
     const collection = ee.ImageCollection(
       'COPERNICUS/S2_SR_HARMONIZED'
@@ -326,3 +333,4 @@ export class EarthEngineProvider implements SatelliteProvider {
     }));
   }
 }
+
