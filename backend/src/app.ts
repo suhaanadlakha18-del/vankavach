@@ -42,12 +42,21 @@ export function createApp() {
   app.use(
     cors({
       origin(origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
+        const hasOrigin = typeof origin === 'string';
+
+        const isConfiguredOrigin =
+          hasOrigin && allowedOrigins.includes(origin);
+
+        const isVercelOrigin =
+          hasOrigin &&
+          /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+
+        if (!origin || isConfiguredOrigin || isVercelOrigin) {
           callback(null, true);
           return;
         }
 
-        callback(new Error('CORS origin denied'));
+        callback(new Error(`CORS origin denied: ${origin}`));
       },
       methods: ['GET', 'POST', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Accept']
