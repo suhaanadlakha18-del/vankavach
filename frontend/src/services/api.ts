@@ -13,8 +13,8 @@ import type {
 
 const BASE = (
   import.meta.env.VITE_API_BASE_URL ||
-  'http://localhost:3000'
-).replace(/\/$/, '');
+  'https://van-guard-org-backend.onrender.com'
+).replace(/\/+$/, '');
 
 export class ApiError extends Error {
   constructor(
@@ -30,22 +30,31 @@ function extractMessage(
   status: number,
   statusText: string
 ): string {
-  if (
-    body &&
-    typeof body === 'object' &&
-    'message' in body &&
-    typeof body.message === 'string'
-  ) {
-    return body.message;
-  }
+  if (body && typeof body === 'object') {
+    const record = body as Record<string, unknown>;
 
-  if (
-    body &&
-    typeof body === 'object' &&
-    'error' in body &&
-    typeof body.error === 'string'
-  ) {
-    return body.error;
+    if (typeof record.message === 'string') {
+      return record.message;
+    }
+
+    if (typeof record.error === 'string') {
+      return record.error;
+    }
+
+    if (
+      record.error &&
+      typeof record.error === 'object'
+    ) {
+      const nested = record.error as Record<string, unknown>;
+
+      if (typeof nested.message === 'string') {
+        return nested.message;
+      }
+
+      if (typeof nested.code === 'string') {
+        return nested.code;
+      }
+    }
   }
 
   if (typeof body === 'string' && body.trim()) {
@@ -55,16 +64,25 @@ function extractMessage(
   return `HTTP ${status}: ${statusText}`;
 }
 
-function unwrapData<T>(body: unknown): T {
-  if (
-    body &&
-    typeof body === 'object' &&
-    'data' in body
-  ) {
-    return (body as { data: T }).data;
+function unwrapData(body: unknown): unknown {
+  let current = body;
+
+  // Safely unwrap nested API envelopes such as { data: [...] }.
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (
+      current &&
+      typeof current === 'object' &&
+      !Array.isArray(current) &&
+      'data' in current
+    ) {
+      current = (current as { data: unknown }).data;
+      continue;
+    }
+
+    break;
   }
 
-  return body as T;
+  return current;
 }
 
 export async function request<T>(
@@ -76,13 +94,14 @@ export async function request<T>(
 
   const timeout = window.setTimeout(
     () => controller.abort(),
-    8000
+    15000
   );
 
   try {
     const response = await fetch(`${BASE}${path}`, {
       ...init,
       signal: init.signal || controller.signal,
+      cache: 'no-store',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -110,21 +129,29 @@ export async function request<T>(
       );
     }
 
-    const payload = unwrapData<T>(body);
+    const payload = unwrapData(body);
 
     return schema
       ? schema.parse(payload)
-      : payload;
+      : payload as T;
   } catch (error) {
     if (error instanceof ApiError) {
       throw error;
+    }
+
+    if (error instanceof z.ZodError) {
+      const first = error.issues[0];
+
+      throw new ApiError(
+        `Invalid API response: ${first?.message ?? 'schema validation failed'}`
+      );
     }
 
     if (
       error instanceof DOMException &&
       error.name === 'AbortError'
     ) {
-      throw new ApiError('Request timed out');
+      throw new ApiError('Backend request timed out');
     }
 
     throw new ApiError(
@@ -137,7 +164,7 @@ export async function request<T>(
   }
 }
 
-const hotspot = z.object({
+const hotspotSchema = z.object({
   id: z.string(),
   name: z.string(),
   state: z.string(),
@@ -174,21 +201,21 @@ export const api = {
     request<Hotspot[]>(
       '/api/v1/hotspots',
       {},
-      z.array(hotspot)
+      z.array(hotspotSchema)
     ),
 
   hotspot: (id: string) =>
     request<Hotspot>(
       `/api/v1/hotspots/${encodeURIComponent(id)}`,
       {},
-      hotspot
+      hotspotSchema
     ),
 
   alerts: () =>
     request<Hotspot[]>(
       '/api/v1/alerts',
       {},
-      z.array(hotspot)
+      z.array(hotspotSchema)
     ),
 
   phenology: (id: string) =>
