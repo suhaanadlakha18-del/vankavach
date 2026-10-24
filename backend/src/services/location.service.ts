@@ -1,0 +1,2 @@
+import {LocationRepository} from '../repositories/location.repository.js'; import {locationQuerySchema} from '../schemas/location.schema.js'; import {AppError} from '../middleware/error-handler.js'; import type {z} from 'zod';
+export class LocationService { repo=new LocationRepository(); list(q:z.infer<typeof locationQuerySchema>){return this.repo.list(q)} get(id:string){const v=this.repo.find(id);if(!v)throw new AppError(404,'NOT_FOUND','The requested location was not found.');return v;} }

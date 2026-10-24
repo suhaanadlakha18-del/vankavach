@@ -1,0 +1,3 @@
+import type {RequestHandler} from 'express'; import {locationIdSchema,locationQuerySchema} from '../schemas/location.schema.js'; import {LocationService} from '../services/location.service.js'; import {ObservationService} from '../services/observation.service.js'; import {env} from '../config/env.js'; const s=new LocationService(),o=new ObservationService();
+export const listLocations:RequestHandler=(req,res)=>{const q=locationQuerySchema.parse(req.query),r=s.list(q);res.json({data:r.rows,meta:{total:r.total,limit:q.limit,offset:q.offset,dataMode:env.DATA_MODE}})};
+export const getLocation:RequestHandler=(req,res)=>{const {id}=locationIdSchema.parse(req.params);const loc=s.get(id);const observations=o.list(id,20,0).rows;res.json({data:{...loc,observations}})};

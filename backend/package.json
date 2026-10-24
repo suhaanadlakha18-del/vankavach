@@ -1,0 +1,35 @@
+{
+  "name": "van-guard-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Educational forest-cover change monitoring API for India",
+  "type": "module",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "test": "vitest run --pool=forks --maxWorkers=1",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:init": "tsx src/db/migrate.ts",
+    "db:seed": "tsx src/db/seed.ts"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^6.0.3",
+    "supertest": "^7.1.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.1.1"
+  }
+}

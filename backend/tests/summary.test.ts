@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import request from 'supertest';import {app} from './helpers.js';it('calculates summary from storage',async()=>{const r=await request(app).get('/api/v1/summary');expect(r.body.data.monitoredLocationCount).toBe(6);expect(r.body.data.countsBySeverity.critical).toBe(2);expect(r.body.data.estimatedAffectedArea.value).toBeNull()});

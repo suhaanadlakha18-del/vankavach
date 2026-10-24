@@ -1,0 +1,1 @@
+import type {RequestHandler} from 'express'; import {locationParamSchema} from '../schemas/phenology.schema.js'; import {PhenologyService} from '../services/phenology.service.js'; const s=new PhenologyService(); export const getPhenology:RequestHandler=(req,res)=>{const {locationId}=locationParamSchema.parse(req.params);res.json({data:s.list(locationId)});};
