@@ -4,3 +4,8 @@ dist
 .vercel
 coverage
 *.log
+
+# TypeScript generated files
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
