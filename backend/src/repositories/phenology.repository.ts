@@ -1,0 +1,1 @@
+import {getDatabase} from '../db/database.js'; export class PhenologyRepository { list(locationId:string){return getDatabase().prepare('SELECT observation_month AS month,historical_baseline,observed_ndvi,anomaly_status,data_source,is_demo FROM phenology WHERE location_id=? ORDER BY observation_month').all(locationId).map((r:any)=>({...r,is_demo:Boolean(r.is_demo)}));} }

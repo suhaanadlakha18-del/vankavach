@@ -1,0 +1,1 @@
+import type {RequestHandler} from 'express'; import {SummaryService} from '../services/summary.service.js'; const s=new SummaryService(); export const getSummary:RequestHandler=(_req,res)=>res.json({data:s.get()});

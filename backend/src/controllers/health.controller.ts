@@ -1,0 +1,2 @@
+import type {RequestHandler} from 'express'; import {getDatabase} from '../db/database.js'; import {env} from '../config/env.js';
+export const health:RequestHandler=(_req,res)=>{let database='connected';try{getDatabase().prepare('SELECT 1').get()}catch{database='unavailable'}res.status(database==='connected'?200:503).json({data:{status:database==='connected'?'ok':'degraded',service:'van-guard-backend',timestamp:new Date().toISOString(),database,dataMode:env.DATA_MODE}})};

@@ -1,0 +1,3 @@
+import { z } from 'zod'; import { severities,dataQualities } from '../types/location.js';
+export const locationIdSchema=z.object({id:z.string().regex(/^[a-z0-9-]{3,64}$/)});
+export const locationQuerySchema=z.object({ severity:z.enum(severities).optional(), state:z.string().trim().min(2).max(80).optional(), evidenceSource:z.enum(['optical','radar','both']).optional(), dataQuality:z.enum(dataQualities).optional(), seasonalFilter:z.string().trim().min(2).max(80).optional(), search:z.string().trim().min(1).max(100).optional(), limit:z.coerce.number().int().min(1).max(100).default(50), offset:z.coerce.number().int().min(0).default(0) });

@@ -1,0 +1,1 @@
+import {it,expect} from 'vitest';import request from 'supertest';import {app} from './helpers.js';it('returns twelve synthetic months',async()=>{const r=await request(app).get('/api/v1/phenology/kanha-buffer-mp');expect(r.status).toBe(200);expect(r.body.data).toHaveLength(12);expect(r.body.data.every((x:any)=>x.is_demo)).toBe(true)});

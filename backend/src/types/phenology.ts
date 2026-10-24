@@ -1,0 +1,1 @@
+export interface PhenologyRecord { id:number; location_id:string; observation_month:string; historical_baseline:number|null; observed_ndvi:number|null; anomaly_status:string; data_source:string; is_demo:number; }

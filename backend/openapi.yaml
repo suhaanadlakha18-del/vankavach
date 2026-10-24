@@ -1,0 +1,92 @@
+openapi: 3.1.0
+info:
+  title: VAN-GUARD Forest Loss Monitoring API
+  version: 1.0.0
+  description: Educational API. Seeded records and time series are synthetic demonstration data, not verified incidents or live observations.
+servers:
+  - url: http://localhost:3000/api/v1
+paths:
+  /health:
+    get:
+      summary: Service and database health
+      responses:
+        '200': { description: Healthy, content: { application/json: { schema: { $ref: '#/components/schemas/HealthEnvelope' } } } }
+  /locations:
+    get:
+      summary: List monitored demonstration locations
+      parameters:
+        - { name: severity, in: query, schema: { $ref: '#/components/schemas/Severity' } }
+        - { name: state, in: query, schema: { type: string } }
+        - { name: evidenceSource, in: query, schema: { type: string, enum: [optical, radar, both] } }
+        - { name: dataQuality, in: query, schema: { $ref: '#/components/schemas/DataQuality' } }
+        - { name: seasonalFilter, in: query, schema: { type: string } }
+        - { name: search, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200': { description: Collection, content: { application/json: { schema: { $ref: '#/components/schemas/LocationCollection' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /locations/{id}:
+    get:
+      summary: Get one location and supporting observations
+      parameters: [ { name: id, in: path, required: true, schema: { type: string } } ]
+      responses:
+        '200': { description: Resource, content: { application/json: { schema: { type: object, required: [data], properties: { data: { $ref: '#/components/schemas/Location' } } } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /summary:
+    get:
+      summary: Summary calculated from stored records
+      responses:
+        '200': { description: Summary response, content: { application/json: { schema: { type: object } } } }
+  /phenology/{locationId}:
+    get:
+      summary: Twelve-month synthetic phenology series
+      parameters: [ { name: locationId, in: path, required: true, schema: { type: string } } ]
+      responses:
+        '200': { description: Phenology records, content: { application/json: { schema: { type: object } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /observations/{locationId}:
+    get:
+      summary: Observation metadata for a location
+      parameters:
+        - { name: locationId, in: path, required: true, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        '200': { description: Observation collection, content: { application/json: { schema: { type: object } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+components:
+  schemas:
+    Severity: { type: string, enum: [minimal_seasonal, low, moderate, high, critical, insufficient_data] }
+    DataQuality: { type: string, enum: [excellent, good, limited, radar_assisted, insufficient] }
+    Location:
+      type: object
+      required: [id,name,state,latitude,longitude,severity,is_demo]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        state: { type: string }
+        latitude: { type: number }
+        longitude: { type: number }
+        severity: { $ref: '#/components/schemas/Severity' }
+        data_quality: { $ref: '#/components/schemas/DataQuality' }
+        estimated_affected_area_ha: { type: [number, 'null'] }
+        ndvi_change: { type: [number, 'null'] }
+        sentinel1_vv_change_db: { type: [number, 'null'] }
+        sentinel1_vh_change_db: { type: [number, 'null'] }
+        is_demo: { type: boolean, const: true }
+    Pagination:
+      type: object
+      required: [total,limit,offset,dataMode]
+      properties: { total: {type: integer}, limit: {type: integer}, offset: {type: integer}, dataMode: {type: string, enum: [demo, provider]} }
+    LocationCollection:
+      type: object
+      required: [data,meta]
+      properties: { data: {type: array, items: {$ref: '#/components/schemas/Location'}}, meta: {$ref: '#/components/schemas/Pagination'} }
+    HealthEnvelope:
+      type: object
+      properties: { data: { type: object, required: [status,service,timestamp,database,dataMode], properties: { status: {type: string}, service: {type: string}, timestamp: {type: string, format: date-time}, database: {type: string}, dataMode: {type: string} } } }
+    Error: { type: object, required: [error], properties: { error: { type: object, required: [code,message], properties: { code: {type: string}, message: {type: string}, details: {} } } } }
+  responses:
+    BadRequest: { description: Invalid request, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    NotFound: { description: Resource not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

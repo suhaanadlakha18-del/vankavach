@@ -1,0 +1,1 @@
+export interface ObservationRecord { id:string; location_id:string; sensor:string; observation_date:string; cloud_percentage:number|null; valid_pixel_percentage:number|null; ndvi_value:number|null; vv_value_db:number|null; vh_value_db:number|null; provider:string; data_status:string; is_demo:number; }

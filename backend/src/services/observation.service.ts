@@ -1,0 +1,1 @@
+import {ObservationRepository} from '../repositories/observation.repository.js'; import {LocationService} from './location.service.js'; export class ObservationService {repo=new ObservationRepository(); locations=new LocationService(); list(id:string,limit:number,offset:number){this.locations.get(id);return this.repo.list(id,limit,offset)} }

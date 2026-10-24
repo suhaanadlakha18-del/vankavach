@@ -1,0 +1,1 @@
+import {PhenologyRepository} from '../repositories/phenology.repository.js'; import {LocationService} from './location.service.js'; export class PhenologyService {repo=new PhenologyRepository(); locations=new LocationService(); list(id:string){this.locations.get(id);return this.repo.list(id)} }

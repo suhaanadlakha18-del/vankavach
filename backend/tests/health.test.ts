@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import request from 'supertest';import {app} from './helpers.js';describe('health',()=>{it('reports connectivity',async()=>{const r=await request(app).get('/api/v1/health');expect(r.status).toBe(200);expect(r.body.data.database).toBe('connected');expect(r.body.data.dataMode).toBe('demo')})});
