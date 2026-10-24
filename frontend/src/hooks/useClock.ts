@@ -1,0 +1,1 @@
+import {useEffect,useState} from 'react'; export function useClock(){const [time,setTime]=useState(new Date());useEffect(()=>{const id=setInterval(()=>setTime(new Date()),1000);return()=>clearInterval(id)},[]);return time.toISOString().replace('T',' ').slice(0,19)+' UTC'}

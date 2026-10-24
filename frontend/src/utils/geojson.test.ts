@@ -1,0 +1,1 @@
+import {describe,it,expect} from 'vitest';import {toGeoJSON} from './geojson';import {demoHotspots} from '../data/demoData';describe('GeoJSON',()=>{it('creates valid point features',()=>{const out=toGeoJSON(demoHotspots);expect(out.type).toBe('FeatureCollection');expect(out.features).toHaveLength(6);expect(out.features[0].geometry.type).toBe('Point')})});

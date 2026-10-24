@@ -1,0 +1,2 @@
+export interface Health {status:string;provider?:string;timestamp?:string} export interface Telemetry {backendStatus:string;apiLatencyMs?:number;lastRefresh?:string;providerState:string;latestEvent?:string;demo?:boolean} export interface AuditRecord {id:string;timestamp:string;action:string;actor?:string;entityId:string;hash:string;previousHash?:string;demo?:boolean}
+export interface DispatchInput {hotspotId:string;type:string;priority:string;team:string;notes:string} export interface DispatchResult {id:string;status:string;message?:string}

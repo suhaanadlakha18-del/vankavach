@@ -1,0 +1,1 @@
+/** @type {import('tailwindcss').Config} */ export default {content:['./index.html','./src/**/*.{ts,tsx}'],theme:{extend:{fontFamily:{mono:['JetBrains Mono','ui-monospace','monospace'],sans:['Inter','system-ui','sans-serif']},colors:{ink:'#050a08',panel:'#0a1511',line:'#1d3a2c',signal:'#69f0ae',amber:'#ffb74d',danger:'#ff5252'}}},plugins:[]}
