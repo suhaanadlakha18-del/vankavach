@@ -226,3 +226,17 @@ backend/data/*.sqlite-shm
 backend/data/*.sqlite-wal
 *.log
 coverage/
+
+# Private credentials - never commit
+*service-account*.json
+*private-key*.json
+van-guard-sentinel*.json
+*.pem
+*.key
+**/credentials.json
+**/service-account.json
+
+# Local environment and generated output
+.env.*
+!.env.example
+*.tsbuildinfo
