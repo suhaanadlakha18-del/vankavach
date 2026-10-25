@@ -17,6 +17,7 @@ import {
   hotspotsRouter,
   telemetryRouter
 } from './routes/compatibility.routes.js';
+import { satelliteIntelRouter } from './routes/satellite-intel.routes.js';
 import { notFound } from './middleware/not-found.js';
 import { errorHandler } from './middleware/error-handler.js';
 
@@ -85,6 +86,7 @@ export function createApp() {
   app.use('/api/v1/audit', auditRouter);
   app.use('/api/v1/dispatch', dispatchRouter);
   app.use('/api/v1/export', exportRouter);
+  app.use('/api/v1/satellite-intel', satelliteIntelRouter);
 
   app.use(notFound);
   app.use(errorHandler);

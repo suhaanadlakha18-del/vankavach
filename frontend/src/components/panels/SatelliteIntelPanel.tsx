@@ -1,36 +1,45 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useCallback, useEffect, useState } from 'react'
 import type { Hotspot } from '../../types/hotspot'
-import type { Telemetry } from '../../types/api'
-import { api } from '../../services/api'
+import { request } from '../../services/api'
+import { Button } from '../ui/Button'
 
-type SatelliteIntelPanelProps = {
-  item?: Hotspot
-  offline: boolean
+type SatelliteObservation = {
+  source?: string
+  dataset?: string
+  satellite?: string
+  acquiredAt?: string | null
+  metric?: string
+  value?: number | null
 }
 
-function IntelField({
+type SatelliteIntel = {
+  locationId: string
+  provider: string
+  refreshedAt: string
+  sentinel1: SatelliteObservation | null
+  sentinel2: SatelliteObservation | null
+  observations: SatelliteObservation[]
+}
+
+function Field({
   label,
   value,
-  status = 'neutral',
+  active = false,
 }: {
   label: string
   value: string
-  status?: 'good' | 'warning' | 'neutral'
+  active?: boolean
 }) {
-  const color =
-    status === 'good'
-      ? 'text-signal'
-      : status === 'warning'
-        ? 'text-amber'
-        : 'text-slate-200'
-
   return (
     <div className="border border-line p-4">
       <div className="text-[10px] uppercase tracking-wider text-slate-500">
         {label}
       </div>
-
-      <div className={`mt-2 font-mono text-sm ${color}`}>
+      <div
+        className={`mt-2 font-mono text-sm ${
+          active ? 'text-signal' : 'text-slate-200'
+        }`}
+      >
         {value}
       </div>
     </div>
@@ -40,174 +49,156 @@ function IntelField({
 export function SatelliteIntelPanel({
   item,
   offline,
-}: SatelliteIntelPanelProps) {
-  const [telemetry, setTelemetry] = useState<Telemetry>()
-  const [loading, setLoading] = useState(true)
+}: {
+  item?: Hotspot
+  offline: boolean
+}) {
+  const [intel, setIntel] = useState<SatelliteIntel>()
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const refresh = useCallback(async () => {
+    if (!item || offline) return
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const result = await request<SatelliteIntel>(
+        `/api/v1/satellite-intel/${encodeURIComponent(item.id)}`,
+      )
+
+      setIntel(result)
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'Satellite request failed',
+      )
+    } finally {
+      setLoading(false)
+    }
+  }, [item, offline])
+
   useEffect(() => {
-    let active = true
+    void refresh()
 
-    async function loadTelemetry() {
-      setLoading(true)
-      setError('')
+    const interval = window.setInterval(
+      () => void refresh(),
+      15 * 60 * 1000,
+    )
 
-      try {
-        const result = await api.telemetry()
+    return () => window.clearInterval(interval)
+  }, [refresh])
 
-        if (active) {
-          setTelemetry(result)
-        }
-      } catch (caught) {
-        if (active) {
-          setError(
-            caught instanceof Error
-              ? caught.message
-              : 'Telemetry request failed',
-          )
-        }
-      } finally {
-        if (active) {
-          setLoading(false)
-        }
-      }
-    }
-
-    void loadTelemetry()
-
-    return () => {
-      active = false
-    }
-  }, [])
-
-  if (loading) {
+  if (!item) {
     return (
       <p className="p-5 text-sm text-slate-400">
-        Loading provider telemetry…
+        Select a hotspot to request satellite intelligence.
       </p>
     )
   }
 
-  const providerConfigured =
-    !offline &&
-    telemetry?.backendStatus === 'online' &&
-    telemetry?.providerState
-      ?.toLowerCase()
-      .includes('provider mode')
-
-  const hasS2Evidence =
-    item?.evidence.some(value =>
-      value.toLowerCase().includes('sentinel-2'),
-    ) ?? false
-
-  const hasS1Evidence =
-    item?.evidence.some(value =>
-      value.toLowerCase().includes('sentinel-1'),
-    ) ?? false
-
-  const s1Status = offline
-    ? 'Backend offline'
-    : hasS1Evidence
-      ? 'Sentinel-1 evidence available for selected hotspot'
-      : providerConfigured
-        ? 'Provider configured; no SAR result supplied for selected hotspot'
-        : 'Provider unavailable'
-
-  const s2Status = offline
-    ? 'Backend offline'
-    : hasS2Evidence
-      ? 'Sentinel-2 evidence available for selected hotspot'
-      : providerConfigured
-        ? 'Provider configured; no optical result supplied for selected hotspot'
-        : 'Provider unavailable'
+  const s1 = intel?.sentinel1
+  const s2 = intel?.sentinel2
 
   return (
     <div className="grid gap-3 p-5 md:grid-cols-2">
-      <IntelField
+      <Field
         label="Sentinel-1 SAR"
-        value={s1Status}
-        status={
-          hasS1Evidence
-            ? 'good'
-            : providerConfigured
-              ? 'warning'
-              : 'neutral'
+        value={
+          s1
+            ? `${s1.metric ?? 'VH'}: ${
+                s1.value ?? 'No numeric result'
+              }`
+            : loading
+              ? 'Querying Earth Engine…'
+              : 'No Sentinel-1 result returned'
         }
+        active={Boolean(s1)}
       />
 
-      <IntelField
+      <Field
         label="Sentinel-2 Optical"
-        value={s2Status}
-        status={
-          hasS2Evidence
-            ? 'good'
-            : providerConfigured
-              ? 'warning'
-              : 'neutral'
-        }
-      />
-
-      <IntelField
-        label="Provider State"
         value={
-          telemetry?.providerState ??
-          'Provider state not supplied'
+          s2
+            ? `${s2.metric ?? 'NDVI'}: ${
+                s2.value ?? 'No numeric result'
+              }`
+            : loading
+              ? 'Querying Earth Engine…'
+              : 'No Sentinel-2 result returned'
         }
-        status={providerConfigured ? 'good' : 'warning'}
+        active={Boolean(s2)}
       />
 
-      <IntelField
-        label="Latest Provider Event"
+      <Field
+        label="Sentinel-1 Dataset"
+        value={s1?.dataset ?? 'Not returned'}
+      />
+
+      <Field
+        label="Sentinel-2 Dataset"
+        value={s2?.dataset ?? 'Not returned'}
+      />
+
+      <Field
+        label="Sentinel-1 Acquisition"
         value={
-          telemetry?.latestEvent ??
-          'No provider event timestamp supplied'
+          s1?.acquiredAt
+            ? new Date(s1.acquiredAt).toLocaleString()
+            : 'Not returned'
         }
       />
 
-      <IntelField
-        label="Selected Hotspot"
+      <Field
+        label="Sentinel-2 Acquisition"
         value={
-          item
-            ? `${item.name} — ${item.id}`
-            : 'No hotspot selected'
+          s2?.acquiredAt
+            ? new Date(s2.acquiredAt).toLocaleString()
+            : 'Not returned'
         }
       />
 
-      <IntelField
-        label="Acquisition Timestamp"
+      <Field
+        label="Provider"
+        value={intel?.provider ?? 'Google Earth Engine'}
+        active={Boolean(intel)}
+      />
+
+      <Field
+        label="Last Query"
         value={
-          item
-            ? new Date(item.detectedAt).toLocaleString()
-            : 'Not supplied'
+          intel?.refreshedAt
+            ? new Date(intel.refreshedAt).toLocaleString()
+            : 'Not queried'
         }
       />
 
-      {typeof item?.ndviChange === 'number' && (
-        <IntelField
-          label="NDVI Change"
-          value={String(item.ndviChange)}
-          status="good"
-        />
-      )}
+      <div className="md:col-span-2 flex items-center gap-3">
+        <Button
+          type="button"
+          onClick={() => void refresh()}
+          disabled={loading || offline}
+        >
+          {loading ? 'Querying…' : 'Refresh satellite data'}
+        </Button>
 
-      {typeof item?.sarVhChange === 'number' && (
-        <IntelField
-          label="SAR VH Change"
-          value={`${item.sarVhChange} dB`}
-          status="good"
-        />
-      )}
+        <span className="text-xs text-slate-400">
+          Automatic refresh: every 15 minutes while this page is open
+        </span>
+      </div>
 
       {error && (
-        <p className="md:col-span-2 text-xs text-danger">
-          Telemetry warning: {error}
-        </p>
+        <div className="md:col-span-2 border border-danger p-3 text-xs text-danger">
+          Earth Engine request failed: {error}
+        </div>
       )}
 
       <p className="md:col-span-2 text-xs leading-5 text-slate-400">
-        Provider configuration and stored evidence are shown
-        separately. A configured provider does not by itself prove
-        that a fresh satellite acquisition succeeded.
+        Values and acquisition timestamps shown here are returned
+        by the backend Earth Engine request. Refresh frequency does
+        not determine satellite revisit or cloud-free availability.
       </p>
     </div>
   )

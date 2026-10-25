@@ -69,14 +69,27 @@ const locations: Record<string, Location> = {
   }
 };
 
+const locationAliases: Record<string, string> = {
+  'keonjhar-od': 'DEMO-OD-KJ-01',
+  'singrauli-mp': 'DEMO-MP-SG-02',
+  'dima-hasao-as': 'DEMO-AS-DH-03',
+  'shimoga-ka': 'DEMO-KA-SH-04',
+  'bastar-cg': 'DEMO-CG-BA-05',
+  'kanha-buffer-mp': 'DEMO-MP-KB-06'
+};
+
 function requireLocation(id: string): Location {
-  const location = locations[id];
+  const canonicalId = locationAliases[id] ?? id;
+  const location = locations[canonicalId];
 
   if (!location) {
     throw new Error(`Unknown monitoring location: ${id}`);
   }
 
-  return location;
+  return {
+    ...location,
+    id
+  };
 }
 
 function evaluate<T>(object: { evaluate: Function }): Promise<T> {
